@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbThing", "DbThing\DbThing.csproj", "{2B630FC9-3418-43D2-8F81-83DA3C192413}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{EC08C5FC-D6E5-406F-AD28-C3DEEA9441B3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B630FC9-3418-43D2-8F81-83DA3C192413}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B630FC9-3418-43D2-8F81-83DA3C192413}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B630FC9-3418-43D2-8F81-83DA3C192413}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B630FC9-3418-43D2-8F81-83DA3C192413}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC08C5FC-D6E5-406F-AD28-C3DEEA9441B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC08C5FC-D6E5-406F-AD28-C3DEEA9441B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC08C5FC-D6E5-406F-AD28-C3DEEA9441B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC08C5FC-D6E5-406F-AD28-C3DEEA9441B3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
