@@ -8,7 +8,7 @@ public static class SqlExtensions
     #region Async
     
     /// <summary>
-    /// Asynchronously query the database via stored procedure. Returns a list of type <see cref="T"/>.
+    /// Query the database via stored procedure.
     /// </summary>
     /// <param name="connection">The connection to run the procedure against.</param>
     /// <param name="procedure">The procedure to run.</param>
@@ -48,7 +48,16 @@ public static class SqlExtensions
         });
     }
     
-    public static async Task<List<T>> QuerySingleColumnAsync<T>
+    /// <summary>
+    /// Query the database via stored procedure for a single column of data. 
+    /// </summary>
+    /// <param name="connection">The connection to use.</param>
+    /// <param name="procedure">The procedure to run.</param>
+    /// <param name="columnName">The name of the column to get data for.</param>
+    /// <param name="parameters">The parameters to pass to the procedure.</param>
+    /// <typeparam name="T">The expected return type of the result.</typeparam>
+    /// <returns>A list of data representing a single column of a database result.</returns>
+    public static async Task<List<T?>> QuerySingleColumnAsync<T>
     (
         this SqlConnection connection,
         string procedure,
@@ -56,40 +65,42 @@ public static class SqlExtensions
         params SqlParameter[] parameters
     )
     {
-        connection.Open();
-
-        await using var transaction = connection.BeginTransaction();
-        await using var command = new SqlCommand(procedure, connection, transaction);
-        command.Parameters.AddRange(parameters);
-        command.CommandType = CommandType.StoredProcedure;
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        var resultValues = new List<T>();
-        while (reader.Read())
+        var (transaction, command) = Setup(connection, procedure, parameters);
+        return await RunAsync(connection, transaction, command, async () =>
         {
-            try
+            await using var reader = await command.ExecuteReaderAsync();
+            
+            var resultValues = new List<T?>();
+            while (reader.Read())
             {
-                var ordinal = reader.GetOrdinal(columnName);
-                var result = reader.GetValue(ordinal);
-                resultValues.Add(result.TryCast<T>());
+                try
+                {
+                    var ordinal = reader.GetOrdinal(columnName);
+                    var result = reader.GetValue(ordinal);
+                    resultValues.Add(result.TryCast<T>());
+                }
+                catch (IndexOutOfRangeException e)
+                {
+                    // Throw a more human readable exception.
+                    throw new IndexOutOfRangeException($"Could not find column {columnName} in procedure result",
+                        e);
+                }
             }
-            catch (IndexOutOfRangeException e)
-            {
-                // Throw a more human readable exception.
-                throw new IndexOutOfRangeException($"Could not find column {columnName} in procedure result", e);
-            }
-        }
 
-        transaction.Commit();
-        connection.Close();
-        return resultValues;
+            return resultValues;
+        });
     }
     
     #endregion
-    
+        
     #region Sync
-
+    
+    /// <summary>
+    /// Executes a stored procedure that is not expected to return any data.
+    /// </summary>
+    /// <param name="connection">The connection to use.</param>
+    /// <param name="procedure">The procedure to be run.</param>
+    /// <param name="parameters">The parameters to pass to the procedure.</param>
     public static void Execute
     (
         this SqlConnection connection,
@@ -101,14 +112,7 @@ public static class SqlExtensions
         Run(connection, transaction, command, () => command.ExecuteNonQuery());
     }
     
-    /// <summary>
-    /// Query the database via stored procedure. Returns a list of type <see cref="T"/>.
-    /// </summary>
-    /// <param name="connection">The connection to run the procedure against.</param>
-    /// <param name="procedure">The procedure to run.</param>
-    /// <param name="parameters">The parameters to pass to the procedure.</param>
-    /// <typeparam name="T">The type of object to map the procedure results to.</typeparam>
-    /// <returns>A list of type <see cref="T"/>, mapped from the results of the stored procedure.</returns>
+    /// <inheritdoc cref="QueryAsync{T}"/>
     public static List<T> Query<T>
     (
         this SqlConnection connection,
@@ -143,7 +147,8 @@ public static class SqlExtensions
         });
     }
     
-    public static List<T> QuerySingleColumn<T>
+    /// <inheritdoc cref="QuerySingleColumnAsync{T}"/>
+    public static List<T?> QuerySingleColumn<T>
     (
         this SqlConnection connection,
         string procedure,
@@ -160,7 +165,7 @@ public static class SqlExtensions
 
         using var reader = command.ExecuteReader();
 
-        var resultValues = new List<T>();
+        var resultValues = new List<T?>();
         while (reader.Read())
         {
             try
@@ -185,6 +190,13 @@ public static class SqlExtensions
     
     #region Private
 
+    /// <summary>
+    /// Sets up a query to be run.
+    /// </summary>
+    /// <param name="connection">The connection to use.</param>
+    /// <param name="procedure">The procedure to run.</param>
+    /// <param name="parameters">The parameters to send to the procedure.</param>
+    /// <returns>A tuple containing a transaction and the sql command.</returns>
     private static (SqlTransaction transaction, SqlCommand command) Setup
     (
         SqlConnection connection, 
@@ -195,11 +207,33 @@ public static class SqlExtensions
         connection.Open();
         var transaction = connection.BeginTransaction();
         var command = new SqlCommand(procedure, connection, transaction);
+
+        foreach (var p in parameters)
+        {
+            // If we have a default value or a null value, convert it to DBNull. This prevents a bunch of strange things
+            // from happening
+            if (p.IsNullable && p.Value == default || p.Value is null)
+            {
+                p.SqlValue = DBNull.Value;
+            }
+        }
+
+        
         command.Parameters.AddRange(parameters);
         command.CommandType = CommandType.StoredProcedure;
         return (transaction, command);
     }
-
+    
+    /// <summary>
+    /// Run a stored procedure. This handles commiting or rolling back the transaction depending on the result of the
+    /// query.
+    /// </summary>
+    /// <param name="connection">The DB connection to use.</param>
+    /// <param name="transaction">The transaction to use.</param>
+    /// <param name="command">The command to run.</param>
+    /// <param name="action">The action to run the command and do any parsing.</param>
+    /// <typeparam name="T">The type we want to return from the procedure.</typeparam>
+    /// <returns>The result of the procedure.</returns>
     private static async Task<T> RunAsync<T>
     (
         SqlConnection connection,
@@ -226,6 +260,7 @@ public static class SqlExtensions
         }
     }
     
+    /// <inheritdoc cref="RunAsync{T}"/>
     private static T Run<T>
     (
         SqlConnection connection,
