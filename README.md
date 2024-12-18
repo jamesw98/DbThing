@@ -56,6 +56,7 @@ public class Fencer : IDbModel
         UsaFencingSabreRating = values.TryGet<string>("USA_FENCING_SABRE_RATING");
     }
 }
+```
 
 Repo method to get all fencers for a user.
 ```csharp
