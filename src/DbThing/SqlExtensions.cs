@@ -1,5 +1,7 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using Microsoft.Data.SqlClient;
+using Serilog;
 
 namespace DbThing;
 
@@ -23,7 +25,7 @@ public static class SqlExtensions
     ) where T : IDbModel, new()
     {
         var (transaction, command) = Setup(connection, procedure, parameters);
-        return await RunAsync(connection, transaction, command, async () =>
+        return await RunAsync(connection, transaction, command, procedure, async () =>
         {
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -66,7 +68,7 @@ public static class SqlExtensions
     )
     {
         var (transaction, command) = Setup(connection, procedure, parameters);
-        return await RunAsync(connection, transaction, command, async () =>
+        return await RunAsync(connection, transaction, command, procedure, async () =>
         {
             await using var reader = await command.ExecuteReaderAsync();
             
@@ -81,14 +83,34 @@ public static class SqlExtensions
                 }
                 catch (IndexOutOfRangeException e)
                 {
-                    // Throw a more human readable exception.
-                    throw new IndexOutOfRangeException($"Could not find column {columnName} in procedure result",
-                        e);
+                    // Throw a more human-readable exception.
+                    throw new IndexOutOfRangeException($"Could not find column {columnName} in procedure result", e);
                 }
             }
 
             return resultValues;
         });
+    }
+
+    /// <summary>
+    /// Gets a list of objects from the database using a custom action for parsing.
+    /// </summary>
+    /// <param name="connection">The SQL connection.</param>
+    /// <param name="procedure">The stored procedure to run.</param>
+    /// <param name="action">The action used to parsing.</param>
+    /// <param name="parameters">Any parameters to send to the procedure.</param>
+    /// <typeparam name="T">The expected return type for the list.</typeparam>
+    /// <returns>A list of type T.</returns>
+    public static async Task<List<T?>> GetListCustomAction<T>
+    (
+        this SqlConnection connection,
+        string procedure,
+        Func<Task<List<T?>>> action,
+        params SqlParameter[] parameters
+    )
+    {
+        var (transaction, command) = Setup(connection, procedure, parameters);
+        return await RunAsync(connection, transaction, command, procedure, action);
     }
     
     #endregion
@@ -109,7 +131,7 @@ public static class SqlExtensions
     )
     {
         var (transaction, command) = Setup(connection, procedure, parameters);
-        Run(connection, transaction, command, () => command.ExecuteNonQuery());
+        Run(connection, transaction, command, procedure, () => command.ExecuteNonQuery());
     }
     
     /// <inheritdoc cref="QueryAsync{T}"/>
@@ -122,7 +144,7 @@ public static class SqlExtensions
     {
         var (transaction, command) = Setup(connection, procedure, parameters);
 
-        return Run(connection, transaction, command, () =>
+        return Run(connection, transaction, command, procedure,() =>
         {
             using var reader = command.ExecuteReader();
 
@@ -176,7 +198,7 @@ public static class SqlExtensions
             }
             catch (IndexOutOfRangeException e)
             {
-                // Throw a more human readable exception.
+                // Throw a more human-readable exception.
                 throw new IndexOutOfRangeException($"Could not find column {columnName} in procedure result", e);
             }
         }
@@ -223,7 +245,7 @@ public static class SqlExtensions
         command.CommandType = CommandType.StoredProcedure;
         return (transaction, command);
     }
-    
+
     /// <summary>
     /// Run a stored procedure. This handles commiting or rolling back the transaction depending on the result of the
     /// query.
@@ -231,6 +253,7 @@ public static class SqlExtensions
     /// <param name="connection">The DB connection to use.</param>
     /// <param name="transaction">The transaction to use.</param>
     /// <param name="command">The command to run.</param>
+    /// <param name="procedure">The name of the proc being run.</param>
     /// <param name="action">The action to run the command and do any parsing.</param>
     /// <typeparam name="T">The type we want to return from the procedure.</typeparam>
     /// <returns>The result of the procedure.</returns>
@@ -239,17 +262,25 @@ public static class SqlExtensions
         SqlConnection connection,
         SqlTransaction transaction,
         SqlCommand command,
+        string procedure,
         Func<Task<T>> action
     )
     {
         try
         {
+            var sw = new Stopwatch();
+            sw.Start();
             var result = await action.Invoke();
             transaction.Commit();
+            sw.Stop();
+            Log.Information("Executed procedure {Procedure}. Took {Time}ms", procedure, 
+                sw.Elapsed.Milliseconds);
             return result;
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Log.Error("Procedure {Procedure} encountered an error:\n{Error}",
+                procedure, e.Message);
             transaction.Rollback();
             throw;
         }
@@ -266,17 +297,25 @@ public static class SqlExtensions
         SqlConnection connection,
         SqlTransaction transaction,
         SqlCommand command,
+        string procedure,
         Func<T> action
     )
     {
         try
         {
+            var sw = new Stopwatch();
+            sw.Start();
             var result = action.Invoke();
             transaction.Commit();
+            sw.Stop();
+            Log.Information("Executed procedure {Procedure}. Took {Time}ms", procedure, 
+                sw.Elapsed.Milliseconds);
             return result;
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Log.Error("Procedure {Procedure} encountered an error:\n{Error}",
+                procedure, e.Message);
             transaction.Rollback();
             throw;
         }
