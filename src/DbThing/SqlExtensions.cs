@@ -59,7 +59,7 @@ public static class SqlExtensions
     /// <param name="parameters">The parameters to pass to the procedure.</param>
     /// <typeparam name="T">The expected return type of the result.</typeparam>
     /// <returns>A list of data representing a single column of a database result.</returns>
-    public static async Task<List<T?>> QuerySingleColumnAsync<T>
+    public static async Task<List<T?>> QuerySingleColumnListAsync<T>
     (
         this SqlConnection connection,
         string procedure,
@@ -111,6 +111,25 @@ public static class SqlExtensions
     {
         var (transaction, command) = Setup(connection, procedure, parameters);
         return await RunAsync(connection, transaction, command, procedure, action);
+    }
+
+    /// <summary>
+    /// Gets a single object from the database.
+    /// </summary>
+    /// <param name="connection">The SQL connection.</param>
+    /// <param name="procedure">The stored procedure to run.</param>
+    /// <param name="parameters">Any parameter to send to the procedure.</param>
+    /// <typeparam name="T">THe expected return type for the single object.</typeparam>
+    /// <returns>A single object of type T.</returns>
+    public static async Task<T> GetSingleAsync<T>
+    (
+        this SqlConnection connection,
+        string procedure,
+        params SqlParameter[] parameters
+    ) where T : IDbModel, new()
+    {
+        var result = await connection.QueryAsync<T>(procedure, parameters);
+        return result.SingleOrDefault() ?? throw new DataException("No row found.");
     }
     
     #endregion
@@ -169,7 +188,7 @@ public static class SqlExtensions
         });
     }
     
-    /// <inheritdoc cref="QuerySingleColumnAsync{T}"/>
+    /// <inheritdoc cref="QuerySingleColumnListAsync{T}"/>
     public static List<T?> QuerySingleColumn<T>
     (
         this SqlConnection connection,
@@ -226,21 +245,22 @@ public static class SqlExtensions
         SqlParameter[] parameters
     )
     {
+        // Open a connection, start a transaction, and create a new SQL command with the appropriate params.
         connection.Open();
         var transaction = connection.BeginTransaction();
         var command = new SqlCommand(procedure, connection, transaction);
-
+        
+        // Check all the procedure parameters to see if we have a default or a null value. If we do, convert the 
+        // parameter to DBNull. This prevents a bunch of strange things from happening.
         foreach (var p in parameters)
         {
-            // If we have a default value or a null value, convert it to DBNull. This prevents a bunch of strange things
-            // from happening
-            if (p.IsNullable && p.Value == default || p.Value is null)
+            if (p is { IsNullable: true, Value: null } || p.Value is null)
             {
                 p.SqlValue = DBNull.Value;
             }
         }
 
-        
+        // Add the params and command type to the SQL command.        
         command.Parameters.AddRange(parameters);
         command.CommandType = CommandType.StoredProcedure;
         return (transaction, command);
@@ -268,8 +288,7 @@ public static class SqlExtensions
     {
         try
         {
-            var sw = new Stopwatch();
-            sw.Start();
+            var sw = Stopwatch.StartNew();
             var result = await action.Invoke();
             transaction.Commit();
             sw.Stop();
@@ -279,8 +298,7 @@ public static class SqlExtensions
         }
         catch (Exception e)
         {
-            Log.Error("Procedure {Procedure} encountered an error:\n{Error}",
-                procedure, e.Message);
+            Log.Error("Procedure {Procedure} encountered an error:\n{Error}", procedure, e.Message);
             transaction.Rollback();
             throw;
         }
@@ -303,8 +321,7 @@ public static class SqlExtensions
     {
         try
         {
-            var sw = new Stopwatch();
-            sw.Start();
+            var sw = Stopwatch.StartNew();
             var result = action.Invoke();
             transaction.Commit();
             sw.Stop();

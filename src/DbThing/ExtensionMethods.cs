@@ -1,5 +1,4 @@
-﻿using System;
-using System.Data;
+﻿using System.Data;
 
 namespace DbThing;
 
@@ -12,7 +11,7 @@ public static class ExtensionMethods
     /// </summary>
     /// <param name="dict">The object dictionary to search through.</param>
     /// <param name="key">The key to attempt to find a value for.</param>
-    /// <typeparam name="T">The type the value should attemp to be cast into.</typeparam>
+    /// <typeparam name="T">The type the value should attempt to be cast into.</typeparam>
     /// <returns>A value from the database cast to type T.</returns>
     /// <exception cref="DataException">
     /// If the value could not be found in the database response, the value could not be parsed into type T, or the
@@ -20,13 +19,7 @@ public static class ExtensionMethods
     /// </exception>
     public static T TryGetRequired<T>(this Dictionary<string, object> dict, string key)
     {
-        if (!dict.TryGetValue(key, out var foundVal))
-        {
-            throw new DataException($"Could not column \"{key}\" in database response.");
-        }
-
-        return TryCast<T?>(foundVal) 
-               ?? throw new DataException($"Could not find non-null value for \"{key}\"");
+        return TryGet<T>(dict, key) ?? throw new DataException($"Could not find value for required column \"{key}\".");
     }
     
     /// <summary>
@@ -50,7 +43,7 @@ public static class ExtensionMethods
     }
     
     /// <summary>
-    /// Attempts to cast the a found object into type T. 
+    /// Attempts to cast the found object into type T. 
     /// </summary>
     /// <param name="obj">The object to attempt to cast.</param>
     /// <typeparam name="T">The type to attempt to cast into.</typeparam>
@@ -68,7 +61,7 @@ public static class ExtensionMethods
         }
         catch (InvalidCastException e)
         {
-            // Throw a more human readable exception.
+            // Throw a more human-readable exception.
             throw new InvalidCastException($"Could not cast value to {typeof(T)}.", e);
         }
     }
