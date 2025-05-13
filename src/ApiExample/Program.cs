@@ -31,6 +31,10 @@ app.MapGet("/fencer/{id}", async () =>
         var result = await repo.QuerySingle<Fencer>("usp_get_fencer", 
             new SqlParameter("@firstName", "Edoardo"),
             new SqlParameter("@lastName", "Mangiarotti"));
+
+        var x = new Test();
+        
+        
         return result;
     })
 .WithName("GetFencerForId");

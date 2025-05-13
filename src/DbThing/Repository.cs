@@ -14,7 +14,7 @@ public class DbRepository
     /// <summary>
     /// Simple constructor that uses a default environment
     /// </summary>
-    [Obsolete("Initializing with an empty constructor should only be used if you if you already have your" +
+    [Obsolete("Initializing with an empty constructor should only be used if you already have your" +
               " database connection string as an environment variable with key \"DbConnectionString\".")]
     public DbRepository()
     {

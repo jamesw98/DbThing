@@ -27,7 +27,7 @@ public static class ExtensionMethods
     /// </summary>
     /// <param name="dict">The object dictionary to search through.</param>
     /// <param name="key">The key to attempt to find a value for.</param>
-    /// <typeparam name="T">The type the value should attemp to be cast into.</typeparam>
+    /// <typeparam name="T">The type the value should attempt to be cast into.</typeparam>
     /// <returns>A value from the database cast to type T.</returns>
     /// <exception cref="DataException">
     /// If the value could not be found in the database response or the value could not be parsed into type T.

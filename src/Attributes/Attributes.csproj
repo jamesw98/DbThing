@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>true</ImplicitUsings>
+        <LangVersion>12</LangVersion>
+        <RootNamespace>jamesw98.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+        <AssemblyName>DbThing.$(MSBuildProjectName)</AssemblyName>
+    </PropertyGroup>
+
+</Project>
