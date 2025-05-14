@@ -18,7 +18,6 @@ public class DbPreProcessGenerator : IIncrementalGenerator
             .Where(c => c is not null);
 
         var compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
-        
         context.RegisterSourceOutput(compilationAndClasses, (spc, source) =>
         {
             var (compilation, classes) = source;
