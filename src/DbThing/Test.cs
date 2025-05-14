@@ -1,4 +1,4 @@
-﻿using jamesw98.Attributes;
+﻿using Attributes;
 
 namespace DbThing;
 

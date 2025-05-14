@@ -1,4 +1,4 @@
-﻿namespace jamesw98.Attributes;
+﻿namespace Attributes;
 
 public interface IDbPreProcessModel
 {

@@ -6,8 +6,6 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
         <LangVersion>12</LangVersion>
-        <RootNamespace>jamesw98.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
-        <AssemblyName>DbThing.$(MSBuildProjectName)</AssemblyName>
     </PropertyGroup>
 
 </Project>

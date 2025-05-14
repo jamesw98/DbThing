@@ -4,8 +4,6 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
     </PropertyGroup>
 
 
@@ -17,10 +15,10 @@
       <PackageReference Include="System.Linq.Expressions" Version="4.3.0" />
       <PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
     </ItemGroup>
-    
+
+
     <ItemGroup>
-        <ProjectReference Include="..\Attributes\Attributes.csproj" />
-        <ProjectReference Include="G:\dev\DbThing\src\DbThingGenerator\DbThingGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+      <ProjectReference Include="..\Attributes\Attributes.csproj" />
     </ItemGroup>
 
 </Project>

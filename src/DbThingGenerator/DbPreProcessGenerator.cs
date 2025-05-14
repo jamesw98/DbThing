@@ -46,8 +46,14 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         var sb = new StringBuilder();
         var ns = classSymbol.ContainingNamespace.ToDisplayString();
 
-        sb.AppendLine($"namespace {ns}");
-        sb.AppendLine("{");
+        var nonGlobalNamespace = !string.IsNullOrEmpty(ns) && ns != "<global namespace>";
+        if (nonGlobalNamespace)
+        {
+            sb.AppendLine($"namespace {ns}");
+            sb.AppendLine("{");
+        }
+        
+        sb.AppendLine($"    using DbThing;");
         sb.AppendLine($"    partial class {classSymbol.Name}");
         sb.AppendLine("    {");
         sb.AppendLine("        public void Initialize(Dictionary<string, object> values)");
@@ -62,18 +68,39 @@ public class DbPreProcessGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var columnName = attr.NamedArguments.FirstOrDefault(kv => kv.Key == "ColumnName").Value.Value as string
-                ?? prop.Name.ToUpperInvariant();
-            
-            var required = attr.NamedArguments
-                .FirstOrDefault(kv => kv.Key == "Required").Value.Value as bool? ?? false;
+            var columnName = prop.Name.ToUpperInvariant();
+            var required = false;
+
+            if (attr.ConstructorArguments.Length >= 1 && attr.ConstructorArguments[0].Value is string val)
+            {
+                columnName = val;
+            }
+
+            if (attr.ConstructorArguments.Length >= 2 && attr.ConstructorArguments[1].Value is bool req)
+            {
+                required = req;
+            }
+
+            // Allow override via named arguments just in case
+            if (attr.NamedArguments.Any(kv => kv.Key == "ColumnName"))
+            {
+                columnName = attr.NamedArguments.First(kv => kv.Key == "ColumnName").Value.Value as string ?? columnName;
+            }
+            if (attr.NamedArguments.Any(kv => kv.Key == "Required"))
+            {
+                required = attr.NamedArguments.First(kv => kv.Key == "Required").Value.Value as bool? ?? required;
+            }
 
             sb.AppendLine($"            {prop.Name} = values.TryGet{(required ? "Required" : string.Empty)}<{typeName}>(\"{columnName}\");");
         }
 
         sb.AppendLine("        }");
         sb.AppendLine("    }");
-        sb.AppendLine("}");
+
+        if (nonGlobalNamespace)
+        {
+            sb.AppendLine("}"); 
+        }
 
         return sb.ToString();
     }

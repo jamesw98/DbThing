@@ -1,3 +1,4 @@
+using ApiExample;
 using DbThing;
 using Microsoft.Data.SqlClient;
 
@@ -19,48 +20,11 @@ app.UseHttpsRedirection();
 
 var repo = new DbRepository(builder.Configuration);
 
-app.MapGet("/fencer", async () =>
+app.MapGet("/person", async () =>
     {
-        var results = await repo.QueryAsync<Fencer>("usp_get_fencers");
+        var results = await repo.QueryAsync<Person>("usp_get_employees");
         return results;
     })
-.WithName("GetFencers");
-
-app.MapGet("/fencer/{id}", async () =>
-    {
-        var result = await repo.QuerySingle<Fencer>("usp_get_fencer", 
-            new SqlParameter("@firstName", "Edoardo"),
-            new SqlParameter("@lastName", "Mangiarotti"));
-
-        var x = new Test();
-        
-        
-        return result;
-    })
-.WithName("GetFencerForId");
+.WithName("GetPeople");
 
 app.Run();
-
-class Fencer : IDbModel
-{
-    public long FencerId { get; set; }
-    public int FtFencerId { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public int ClubId { get; set; }
-    public string Gender { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Initialize the model with values from the database.
-    /// </summary>
-    /// <param name="values">The raw response from the database.</param>
-    public void Initialize(Dictionary<string, object> values)
-    {
-        FencerId = values.TryGet<long>("FENCER_ID");
-        FtFencerId = values.TryGet<int>("FT_ID");
-        FirstName = values.TryGetRequired<string>("FIRST_NAME");
-        LastName = values.TryGetRequired<string>("LAST_NAME");
-        ClubId = values.TryGetRequired<int>("CLUB_ID");
-        Gender = values.TryGetRequired<string>("GENDER");
-    }
-}

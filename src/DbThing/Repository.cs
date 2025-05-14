@@ -43,6 +43,10 @@ public class DbRepository
         
         // Set up the connection. 
         var connString = Environment.GetEnvironmentVariable(connectionStringKey);
+        if (connString is null)
+        {
+            throw new DataException("Could not initialize DB with provided connection string.");
+        }
         _connection = new SqlConnection(connString);
     }
     

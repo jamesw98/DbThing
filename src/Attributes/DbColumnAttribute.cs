@@ -1,4 +1,4 @@
-﻿namespace jamesw98.Attributes;
+﻿namespace Attributes;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class DbColumnAttribute(string columnName) : Attribute
