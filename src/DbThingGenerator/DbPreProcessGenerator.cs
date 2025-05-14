@@ -21,36 +21,16 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         
         context.RegisterSourceOutput(compilationAndClasses, (spc, source) =>
         {
-            var x = new DiagnosticDescriptor(
-                id: "DBGEN001",
-                title: "Source Generator Starting!!!",
-                messageFormat: $"Starting!!!!",
-                category: "DbModelGenerator",
-                DiagnosticSeverity.Info,
-                isEnabledByDefault: true
-            );
-            spc.ReportDiagnostic(Diagnostic.Create(x, Location.None));
-            
             var (compilation, classes) = source;
 
             foreach (var classDecl in classes)
             {
                 var semanticModel = compilation.GetSemanticModel(classDecl.SyntaxTree);
-                var symbol = semanticModel.GetDeclaredSymbol(classDecl) as INamedTypeSymbol;
-                
-                var descriptor = new DiagnosticDescriptor(
-                    id: "DBGEN001",
-                    title: "Source Generator Output",
-                    messageFormat: $"Generated Initialize method for class '{symbol?.Name}'",
-                    category: "DbModelGenerator",
-                    DiagnosticSeverity.Info,
-                    isEnabledByDefault: true
-                );
 
-                spc.ReportDiagnostic(Diagnostic.Create(descriptor, Location.None));
-
-                if (symbol is null || !symbol.Interfaces.Any(i => i.Name == "IDbPreProcessModel"))
+                if (semanticModel.GetDeclaredSymbol(classDecl) is not INamedTypeSymbol symbol || !symbol.Interfaces.Any(i => i.Name == "IDbPreProcessModel"))
+                {
                     continue;
+                }
 
                 var properties = symbol.GetMembers().OfType<IPropertySymbol>()
                     .Where(p => p.GetAttributes().Any(a => a.AttributeClass?.Name.StartsWith("DbColumn") == true))
@@ -62,7 +42,7 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         });
     }
 
-    private string GenerateInitializeMethod(INamedTypeSymbol classSymbol, List<IPropertySymbol> properties)
+    private static string GenerateInitializeMethod(INamedTypeSymbol classSymbol, List<IPropertySymbol> properties)
     {
         var sb = new StringBuilder();
         var ns = classSymbol.ContainingNamespace.ToDisplayString();
@@ -76,18 +56,20 @@ public class DbPreProcessGenerator : IIncrementalGenerator
 
         foreach (var prop in properties)
         {
-            var attr = prop.GetAttributes()
-                .FirstOrDefault(a => a.AttributeClass?.Name.StartsWith("DbColumn") == true);
+            var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            var attr = prop.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name.StartsWith("DbColumn") == true);
+            if (attr is null)
+            {
+                continue;
+            }
 
-            if (attr is null) continue;
-
-            var columnName = attr.NamedArguments.FirstOrDefault(kv => kv.Key == "columnName").Value.Value as string
+            var columnName = attr.NamedArguments.FirstOrDefault(kv => kv.Key == "ColumnName").Value.Value as string
                 ?? prop.Name.ToUpperInvariant();
+            
+            var required = attr.NamedArguments
+                .FirstOrDefault(kv => kv.Key == "Required").Value.Value as bool? ?? false;
 
-            var typeArg = attr.AttributeClass!.TypeArguments.FirstOrDefault();
-            var typeName = typeArg?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-
-            sb.AppendLine($"            {prop.Name} = values.TryGetRequired<{typeName}>(\"{columnName}\");");
+            sb.AppendLine($"            {prop.Name} = values.TryGet{(required ? "Required" : string.Empty)}<{typeName}>(\"{columnName}\");");
         }
 
         sb.AppendLine("        }");

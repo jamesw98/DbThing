@@ -4,6 +4,9 @@ namespace DbThing;
 
 public partial class Test : IDbPreProcessModel
 {
-    [DbColumn<string>(columnName:"NAME")]
+    [DbColumn("NAME", Required=true)]
     public string Name { get; set; }
+    
+    [DbColumn("ID")]
+    public long Id { get; set; }
 }
