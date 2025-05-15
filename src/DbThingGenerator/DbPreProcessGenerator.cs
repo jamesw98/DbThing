@@ -22,6 +22,9 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         {
             var (compilation, classes) = source;
 
+            var dbComplexAttrSymbol = compilation.GetTypeByMetadataName("Attributes.DbComplexColumnAttribute");
+            var dbColumnAttrSymbol = compilation.GetTypeByMetadataName("Attributes.DbColumnAttribute");
+            
             foreach (var classDecl in classes)
             {
                 var semanticModel = compilation.GetSemanticModel(classDecl.SyntaxTree);
@@ -32,16 +35,16 @@ public class DbPreProcessGenerator : IIncrementalGenerator
                 }
 
                 var properties = symbol.GetMembers().OfType<IPropertySymbol>()
-                    .Where(p => p.GetAttributes().Any(a => a.AttributeClass?.Name.StartsWith("DbColumn") == true))
+                    .Where(p => p.GetAttributes().Any(a => a.AttributeClass?.Name.StartsWith("Db") == true))
                     .ToList();
 
-                var sourceText = GenerateInitializeMethod(symbol, properties);
+                var sourceText = GenerateInitializeMethod(symbol, properties, dbColumnAttrSymbol, dbComplexAttrSymbol);
                 spc.AddSource($"{symbol.Name}_DbModel.g.cs", SourceText.From(sourceText, Encoding.UTF8));
             }
         });
     }
 
-    private static string GenerateInitializeMethod(INamedTypeSymbol classSymbol, List<IPropertySymbol> properties)
+    private static string GenerateInitializeMethod(INamedTypeSymbol classSymbol, List<IPropertySymbol> properties, INamedTypeSymbol? standardAttrName, INamedTypeSymbol? complexAttrName)
     {
         var sb = new StringBuilder();
         var ns = classSymbol.ContainingNamespace.ToDisplayString();
@@ -62,36 +65,21 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         foreach (var prop in properties)
         {
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-            var attr = prop.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name.StartsWith("DbColumn") == true);
-            if (attr is null)
+            
+            // First, check if we need to do a complex object setup.
+            var complexAttr = prop.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, complexAttrName));
+            if (complexAttr is not null)
             {
+                BuildComplexObject(prop, sb, typeName);
                 continue;
             }
 
-            var columnName = prop.Name.ToUpperInvariant();
-            var required = false;
-
-            if (attr.ConstructorArguments.Length >= 1 && attr.ConstructorArguments[0].Value is string val)
+            // Then, check if we need to do a standard/primitive object setup. 
+            var columnAttr = prop.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, standardAttrName));
+            if (columnAttr is not null)
             {
-                columnName = val;
+                BuildStandardColumn(prop, columnAttr, sb, typeName);
             }
-
-            if (attr.ConstructorArguments.Length >= 2 && attr.ConstructorArguments[1].Value is bool req)
-            {
-                required = req;
-            }
-
-            // Allow override via named arguments just in case
-            if (attr.NamedArguments.Any(kv => kv.Key == "ColumnName"))
-            {
-                columnName = attr.NamedArguments.First(kv => kv.Key == "ColumnName").Value.Value as string ?? columnName;
-            }
-            if (attr.NamedArguments.Any(kv => kv.Key == "Required"))
-            {
-                required = attr.NamedArguments.First(kv => kv.Key == "Required").Value.Value as bool? ?? required;
-            }
-
-            sb.AppendLine($"            {prop.Name} = values.TryGet{(required ? "Required" : string.Empty)}<{typeName}>(\"{columnName}\");");
         }
 
         sb.AppendLine("        }");
@@ -103,5 +91,46 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         }
 
         return sb.ToString();
+    }
+
+    private static void BuildComplexObject(IPropertySymbol prop, StringBuilder sb, string typeName)
+    {
+        sb.AppendLine($"            {prop.Name} = new {typeName}();");
+        sb.AppendLine($"            {prop.Name}.Initialize(values);");
+    }
+
+    /// <summary>
+    /// Builds a standard column.
+    /// </summary>
+    /// <param name="prop">The property we're looking at.</param>
+    /// <param name="attr">The attribute we're using.</param>
+    /// <param name="sb">The StringBuilder to add to.</param>
+    /// <param name="typeName">The name of the type to use.</param>
+    private static void BuildStandardColumn(IPropertySymbol prop, AttributeData attr, StringBuilder sb, string typeName)
+    {
+        var columnName = prop.Name.ToUpperInvariant();
+        var required = false;
+
+        if (attr.ConstructorArguments.Length >= 1 && attr.ConstructorArguments[0].Value is string val)
+        {
+            columnName = val;
+        }
+
+        if (attr.ConstructorArguments.Length >= 2 && attr.ConstructorArguments[1].Value is bool req)
+        {
+            required = req;
+        }
+
+        // Allow override via named arguments just in case
+        if (attr.NamedArguments.Any(kv => kv.Key == "ColumnName"))
+        {
+            columnName = attr.NamedArguments.First(kv => kv.Key == "ColumnName").Value.Value as string ?? columnName;
+        }
+        if (attr.NamedArguments.Any(kv => kv.Key == "Required"))
+        {
+            required = attr.NamedArguments.First(kv => kv.Key == "Required").Value.Value as bool? ?? required;
+        }
+
+        sb.AppendLine($"            {prop.Name} = values.TryGet{(required ? "Required" : string.Empty)}<{typeName}>(\"{columnName}\");");
     }
 }
