@@ -73,29 +73,37 @@ public class DbRepository
     /// </summary>
     /// <param name="procedure">The procedure to run.</param>
     /// <param name="parameters">Parameters to be passed to the procedure.</param>
+    /// <param name="type">The command type for this query. Defaults to stored procedure.</param>
     /// <typeparam name="TOutput">The type of the output list.</typeparam>
     /// <returns>A list of type <see cref="TOutput"/>.</returns>
-    public async Task<List<TOutput>> QueryAsync<TOutput>(string procedure, params SqlParameter[] parameters) where TOutput : IDbModel, new()
+    public async Task<List<TOutput>> QueryAsync<TOutput>
+    (
+        string procedure,
+        SqlParameter[]? parameters = null,
+        CommandType type = CommandType.StoredProcedure
+    ) where TOutput : IDbModel, new()
     {
-        return await _connection.QueryAsync<TOutput>(procedure, parameters);
+        return await _connection.QueryAsync<TOutput>(procedure, parameters ?? [], type);
     }
-
+    
     /// <summary>
     /// Query the database to get a single column of data. 
     /// </summary>
     /// <param name="procedure">The procedure to run.</param>
     /// <param name="columnName">The name of the column to get data from.</param>
     /// <param name="parameters">Parameters to be passed to the procedure.</param>
+    /// <param name="type">The command type for this query. Defaults to stored procedure.</param>
     /// <typeparam name="TOutput">The type of the output list.</typeparam>
     /// <returns>A list of type <see cref="TOutput"/> which is a single column from the database response.</returns>
     public async Task<List<TOutput?>> QuerySingleColumnListAsync<TOutput>
     (
         string procedure,
         string columnName,
-        params SqlParameter[] parameters
+        SqlParameter[]? parameters = null,
+        CommandType type = CommandType.StoredProcedure
     )
     {
-        return await _connection.QuerySingleColumnListAsync<TOutput>(procedure, columnName, parameters);
+        return await _connection.QuerySingleColumnListAsync<TOutput>(procedure, columnName, parameters ?? [], type);
     }
 
     /// <summary>
@@ -103,9 +111,10 @@ public class DbRepository
     /// </summary>
     /// <param name="procedure">The procedure to run.</param>
     /// <param name="parameters">Parameters to be passed to the procedure.</param>
-    public void Execute(string procedure, params SqlParameter[] parameters)
+    /// <param name="type">The command type for this query. Defaults to stored procedure.</param>
+    public void Execute(string procedure, SqlParameter[]? parameters = null, CommandType type = CommandType.StoredProcedure)
     {
-        _connection.Execute(procedure, parameters);
+        _connection.Execute(procedure, parameters ?? [], type);
     }
 
     /// <summary>
@@ -113,12 +122,18 @@ public class DbRepository
     /// </summary>
     /// <param name="procedure">The procedure to run.</param>
     /// <param name="parameters">Parameters to be passed to the procedure.</param>
+    /// <param name="type">The command type for this query. Defaults to stored procedure.</param>
     /// <typeparam name="TOutput">The type of the output.</typeparam>
     /// <returns>A single instance of <see cref="TOutput"/>.</returns>
     /// <exception cref="InvalidOperationException">If more than one row was found.</exception>
     /// <exception cref="DataException">If no row was found.</exception>
-    public async Task<TOutput> QuerySingle<TOutput>(string procedure, params SqlParameter[] parameters) where TOutput : IDbModel, new()
+    public async Task<TOutput> QuerySingle<TOutput>
+    (
+        string procedure,
+        SqlParameter[]? parameters = null,
+        CommandType type = CommandType.StoredProcedure
+    ) where TOutput : IDbModel, new()
     {
-        return await _connection.GetSingleAsync<TOutput>(procedure, parameters);
+        return await _connection.GetSingleAsync<TOutput>(procedure, parameters ?? [], type);
     }
 }

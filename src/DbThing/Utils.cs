@@ -13,12 +13,14 @@ public static class Utils
     /// <param name="connection">The connection to use.</param>
     /// <param name="procedure">The procedure to run.</param>
     /// <param name="parameters">The parameters to send to the procedure.</param>
+    /// <param name="type">The command type to use.</param>
     /// <returns>A tuple containing a transaction and the sql command.</returns>
     public static (SqlTransaction transaction, SqlCommand command) Setup
     (
         SqlConnection connection, 
         string procedure,
-        SqlParameter[] parameters
+        SqlParameter[] parameters,
+        CommandType type
     )
     {
         // Open a connection, start a transaction, and create a new SQL command with the appropriate params.
@@ -38,7 +40,7 @@ public static class Utils
 
         // Add the params and command type to the SQL command.        
         command.Parameters.AddRange(parameters);
-        command.CommandType = CommandType.StoredProcedure;
+        command.CommandType = type;
         return (transaction, command);
     }
 
@@ -68,13 +70,42 @@ public static class Utils
             var result = await action.Invoke();
             transaction.Commit();
             sw.Stop();
-            Log.Information("Executed procedure {Procedure}. Took {Time}ms", procedure, 
-                sw.Elapsed.Milliseconds);
+
+            switch (command.CommandType)
+            {
+                case CommandType.Text:
+                    Log.Information("Executed query. Took {Time}ms",  sw.Elapsed.Milliseconds);
+                    break;
+                case CommandType.StoredProcedure:
+                    Log.Information("Executed procedure {Procedure}. Took {Time}ms", procedure, sw.Elapsed.Milliseconds);
+                    break;
+                case CommandType.TableDirect:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            
+            if (command.CommandType == CommandType.StoredProcedure)
+            {
+                
+            }
             return result;
         }
         catch (Exception e)
         {
-            Log.Error("Procedure {Procedure} encountered an error:\n{Error}", procedure, e.Message);
+            switch (command.CommandType)
+            {
+                case CommandType.Text:
+                    Log.Information("Query encountered an error:\n{Error}",  e.Message);
+                    break;
+                case CommandType.StoredProcedure:
+                    Log.Error("Procedure {Procedure} encountered an error:\n{Error}", procedure, e.Message);
+                    break;
+                case CommandType.TableDirect:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
             transaction.Rollback();
             throw;
         }
