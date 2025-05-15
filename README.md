@@ -1,71 +1,71 @@
 # DbThing
 ## What is it?
-It's a thing, for your database. More specifically, a thing that lets you query the database using stored procedures. 
+It's a thing, for your database. More specifically, a thing that lets you query the database and map the results of the queries to C# objects.   
+You can write you own mapping method or you can let the source generator write it for you.
 
-## How to use the thing?
-When you create a class to represent a response from your database/data model/whatever you want to call it, have it implement `IDbModel`. This will require you to implement the method `Initialize()` in your class. Once that has been implemented, you can use DbThing to call your stored procs and it will automatically attempt to parsse into whatever type you specified.  
-
-See the examples below.
-
-## Examples
-A class representing an individual fencer.
-
+## Quick Samples
+### Models
+#### Manual
+This is a model that has it's mapping method manually written. 
 ```csharp
-public class Fencer : IDbModel
+using DbThing;
+
+namespace ApiExample;
+
+public class PersonManual : IDbModel
 {
-    /// <summary>
-    /// The ID of the fencer.
-    /// </summary>
-    public long FencerId { get; set; }
-    
-    /// <summary>
-    /// First name of the fencer.
-    /// </summary>
+    public int PersonId { get; set; }
+    public DateTime HireDate { get; set; }
     public string FirstName { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Last name of the fencer.
-    /// </summary>
     public string LastName { get; set; } = string.Empty;
-
-    ...
-
-    /// <summary>
-    /// The USA Fencing sabre rating for this fencer.
-    /// This field defaults to "U" from the database.
-    /// </summary>
-    public string? UsaFencingSabreRating { get; set; }
+    public string? Title { get; set; }
     
-    /// <summary>
-    /// Initialize the model with data from the database.
-    /// </summary>
-    /// <param name="values">The values from the database to attempt to parse.</param>
     public void Initialize(Dictionary<string, object> values)
     {
-        FencerId = values.TryGet<long>("FENCER_ID");
-        FirstName = values.TryGetRequired<string>("FIRST_NAME");
-        LastName = values.TryGetRequired<string>("LAST_NAME");
-        MiddleName = values.TryGet<string>("MIDDLE_NAME");
-        PrimaryClubId = values.TryGet<long>("PRIMARY_CLUB_ID");
-        SecondaryClubId = values.TryGet<long>("SECONDARY_CLUB_ID");
-        CreatedByUserId = values.TryGet<long>("CREATED_BY_USER_ID");
-        IsPrivate = values.TryGet<bool>("IS_PRIVATE");
-        UsaFencingId = values.TryGet<long>("USA_FENCING_ID");
-        UsaFencingEpeeRating = values.TryGet<string>("USA_FENCING_EPEE_RATING");
-        UsaFencingFoilRating = values.TryGet<string>("USA_FENCING_FOIL_RATING");
-        UsaFencingSabreRating = values.TryGet<string>("USA_FENCING_SABRE_RATING");
+        PersonId = values.TryGetRequired<int>("BusinessEntityId");
+        HireDate = values.TryGetRequired<DateTime>("HireDate");
+        FirstName = values.TryGetRequired<string>("FirstName");
+        LastName = values.TryGetRequired<string>("LastName");
+        Title = values.TryGet<string>("Title");
     }
 }
-
-Repo method to get all fencers for a user.
+```
+#### Source Generated
+This is a model who will have it's mapping method (`Initialize` in the above example) generated at build time.
 ```csharp
-public async Task<List<Fencer>> GetAllFencersForUser(long requestingUserId)
+using Attributes;
+using DbThing;
+
+namespace ApiExample;
+
+public partial class Person : IDbPreProcessModel, IDbModel
 {
-    var fencers = await QueryAsync<Fencer>
-    (
-        "usp_get_fencers_for_user",
-        new SqlParameter("@userId", requestingUserId)
-    );
-    return fencers;
+    [DbColumn("BusinessEntityID", Required = true)]
+    public int PersonId { get; set; }
+    
+    [DbColumn("HireDate", Required = true)]
+    public DateTime HireDate { get; set; }
+
+    [DbColumn("FirstName", Required = true)]
+    public string FirstName { get; set; } = string.Empty;
+    
+    [DbColumn("LastName", Required = true)]
+    public string LastName { get; set; } = string.Empty;
+    
+    [DbColumn("Title")]
+    public string? Title { get; set; }
 }
+```
+### Querying
+This example assumes you're building a minimal api, like in the example project included in this repo. 
+```csharp
+<.NET minimal api boilerplate>
+
+var repo = var repo = new DbRepository(builder.Configuration);
+
+app.MapGet("/person/{name}", ([FromRoute] string name) => {
+    var result = repo.QueryAsync<Person>("usp_get_persons_whose_first_name_is", [new SqlParameter("@name", name)]);
+    return result;
+})
+.WithName("FirstNames");
 ```
