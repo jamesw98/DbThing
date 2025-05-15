@@ -1,3 +1,4 @@
+using System.Data;
 using System.Diagnostics;
 using ApiExample;
 using DbThing;
@@ -23,17 +24,37 @@ app.UseHttpsRedirection();
 
 var repo = new DbRepository(builder.Configuration);
 
+// Example of using DbThing to get objects whose properties are all primitives.
 app.MapGet("/person", async () => await (GetListHelper<Person>("usp_get_employees", "/person")))
     .WithName("GetPeople");
 
+// Example of using DbThing to get objects who has properties that are "complex" objects. 
 app
     .MapGet("/order", async () => await (GetListHelper<Order>("usp_get_orders_with_product_details", "/order")))
     .WithName("GetOrders");
 
+// Example of using DbThing with raw query text instead of a stored procedure. 
+app.MapGet("/product", async () =>
+{
+    var sw = Stopwatch.StartNew();
+    var result = await repo.QueryAsync<Product>("""
+                                   SELECT 
+                                   	Name, 
+                                   	ProductNumber,
+                                   	Color,
+                                   	ListPrice
+                                   FROM Production.Product
+                                   """, type: CommandType.Text);
+    sw.Stop();
+    Log.Information("Finished call to {EndPoint}, took {Time} seconds.", "/product", sw.Elapsed);
+    return result;
+})
+.WithName("GetProducts");
+
 app.Run();
 return;
 
-async Task<List<T>> GetListHelper<T>(string proc, string endpoint) where T : IDbModel, new()
+async Task<List<T>> GetListHelper<T>(string proc, string endpoint, CommandType type=CommandType.StoredProcedure) where T : IDbModel, new()
 {
     var sw = Stopwatch.StartNew();
     var results = await repo.QueryAsync<T>(proc);

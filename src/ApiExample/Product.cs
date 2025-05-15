@@ -15,5 +15,5 @@ public partial class Product : IDbPreProcessModel, IDbModel
     public string Color { get; set; } = string.Empty;
     
     [DbColumn("ListPrice")]
-    public decimal Price { get; set; }
+    public decimal Price { get; set; }  
 }
