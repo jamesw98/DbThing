@@ -85,10 +85,6 @@ public static class Utils
                     throw new ArgumentOutOfRangeException();
             }
             
-            if (command.CommandType == CommandType.StoredProcedure)
-            {
-                
-            }
             return result;
         }
         catch (Exception e)
