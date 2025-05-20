@@ -8,9 +8,13 @@ namespace DbThingGenerator;
 [Generator]
 public class DbPreProcessGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// Initializes the generator.
+    /// </summary>
+    /// <param name="context">The context for the generator.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Syntax provider to identify candidate classes
+        // Syntax provider to identify candidate classes.
         var classDeclarations = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => node is ClassDeclarationSyntax,
@@ -20,15 +24,15 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         var compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
         context.RegisterSourceOutput(compilationAndClasses, (spc, source) =>
         {
+            // Get the compilation and classes.
             var (compilation, classes) = source;
-
             var dbComplexAttrSymbol = compilation.GetTypeByMetadataName("Attributes.DbComplexColumnAttribute");
             var dbColumnAttrSymbol = compilation.GetTypeByMetadataName("Attributes.DbColumnAttribute");
             
             foreach (var classDecl in classes)
             {
+                // Check if the class implements IDbPreProcessModel.
                 var semanticModel = compilation.GetSemanticModel(classDecl.SyntaxTree);
-
                 if (semanticModel.GetDeclaredSymbol(classDecl) is not INamedTypeSymbol symbol || !symbol.Interfaces.Any(i => i.Name == "IDbPreProcessModel"))
                 {
                     continue;
@@ -44,6 +48,14 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         });
     }
 
+    /// <summary>
+    /// Generates the Initialize method for the class based on the properties and their attributes.
+    /// </summary>
+    /// <param name="classSymbol">The class symbol we're working with.</param>
+    /// <param name="properties">The properties of the class.</param>
+    /// <param name="standardAttrName">The standard column attribute name.</param>
+    /// <param name="complexAttrName">The complex column attribute name.</param>
+    /// <returns></returns>
     private static string GenerateInitializeMethod(INamedTypeSymbol classSymbol, List<IPropertySymbol> properties, INamedTypeSymbol? standardAttrName, INamedTypeSymbol? complexAttrName)
     {
         var sb = new StringBuilder();
@@ -70,7 +82,7 @@ public class DbPreProcessGenerator : IIncrementalGenerator
             var complexAttr = prop.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, complexAttrName));
             if (complexAttr is not null)
             {
-                BuildComplexObject(prop, sb, typeName);
+                BuildComplex(prop, sb, typeName);
                 continue;
             }
 
@@ -78,7 +90,7 @@ public class DbPreProcessGenerator : IIncrementalGenerator
             var columnAttr = prop.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, standardAttrName));
             if (columnAttr is not null)
             {
-                BuildStandardColumn(prop, columnAttr, sb, typeName);
+                BuildPrimitive(prop, columnAttr, sb, typeName);
             }
         }
 
@@ -92,21 +104,27 @@ public class DbPreProcessGenerator : IIncrementalGenerator
 
         return sb.ToString();
     }
-
-    private static void BuildComplexObject(IPropertySymbol prop, StringBuilder sb, string typeName)
+    
+    /// <summary>
+    /// Builds a complex object.
+    /// </summary>
+    /// <param name="prop"></param>
+    /// <param name="sb"></param>
+    /// <param name="typeName"></param>
+    private static void BuildComplex(IPropertySymbol prop, StringBuilder sb, string typeName)
     {
         sb.AppendLine($"            {prop.Name} = new {typeName}();");
         sb.AppendLine($"            {prop.Name}.Initialize(values);");
     }
 
     /// <summary>
-    /// Builds a standard column.
+    /// Builds a primitive.
     /// </summary>
     /// <param name="prop">The property we're looking at.</param>
     /// <param name="attr">The attribute we're using.</param>
     /// <param name="sb">The StringBuilder to add to.</param>
     /// <param name="typeName">The name of the type to use.</param>
-    private static void BuildStandardColumn(IPropertySymbol prop, AttributeData attr, StringBuilder sb, string typeName)
+    private static void BuildPrimitive(IPropertySymbol prop, AttributeData attr, StringBuilder sb, string typeName)
     {
         var columnName = prop.Name.ToUpperInvariant();
         var required = false;
