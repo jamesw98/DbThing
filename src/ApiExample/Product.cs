@@ -1,9 +1,9 @@
 ﻿using Attributes;
-using DbThing;
+using DbThing.Common.Interfaces;
 
 namespace ApiExample;
 
-public partial class Product : IDbPreProcessModel, IDbModel
+public partial class Product : IDbPreProcessModel
 {
     [DbColumn("Name")]
     public string Name { get; set; } = string.Empty;

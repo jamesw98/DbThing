@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using DbThing.Common.Interfaces;
 using Microsoft.Data.SqlClient;
 
 namespace DbThing;
