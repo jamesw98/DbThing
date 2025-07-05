@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Attributes", "Attributes\At
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiExample", "ApiExample\ApiExample.csproj", "{A38F4F24-E644-4C36-B870-7DEC55823791}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbThing.Common", "DbThing.Common\DbThing.Common.csproj", "{8E426987-608E-4984-A53D-9C8B5B8EF8D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{A38F4F24-E644-4C36-B870-7DEC55823791}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A38F4F24-E644-4C36-B870-7DEC55823791}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A38F4F24-E644-4C36-B870-7DEC55823791}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E426987-608E-4984-A53D-9C8B5B8EF8D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E426987-608E-4984-A53D-9C8B5B8EF8D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E426987-608E-4984-A53D-9C8B5B8EF8D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E426987-608E-4984-A53D-9C8B5B8EF8D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

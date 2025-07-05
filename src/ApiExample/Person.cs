@@ -1,9 +1,9 @@
 ﻿using Attributes;
-using DbThing;
+using DbThing.Common.Interfaces;
 
 namespace ApiExample;
 
-public partial class Person : IDbPreProcessModel, IDbModel
+public partial class Person : IDbPreProcessModel
 {
     [DbColumn("BusinessEntityID", Required = true)]
     public int PersonId { get; set; }
