@@ -45,7 +45,7 @@ var repo = new DbRepository(builder.Configuration);
 app.MapGet("/person", async () => await (GetListHelper<Person>("usp_get_employees", "/person")))
     .WithName("GetPeople");
 
-// Example of using DbThing to get objects who has propertizes that are "complex" objects. 
+// Example of using DbThing to get objects who has properties that are "complex" objects. 
 app
     .MapGet("/order", async () => await (GetListHelper<Order>("usp_get_orders_with_product_details", "/order")))
     .WithName("GetOrders");
