@@ -8,6 +8,15 @@
         <ImplicitUsings>true</ImplicitUsings>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <LangVersion>12</LangVersion>
+
+        <PackageId>DbThingGenerator</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>James Wallace</Authors>
+        <Company>DbThing</Company>
+        <Description>A source generator for creating models for DbThing.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/jamesw98/DbThing</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,10 +32,16 @@
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 
         <!-- Pack the attributes dll in the analyzers/dotnet/cs path -->
-        <None Include="$(OutputPath)\DbThing.Attributes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\Attributes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 
         <!-- Pack the attributes dll in the lib\netstandard2.0 path -->
-        <None Include="$(OutputPath)\DbThing.Attributes.dll" Pack="true" PackagePath="lib\netstandard2.0" Visible="true" />
+        <None Include="$(OutputPath)\Attributes.dll" Pack="true" PackagePath="lib\netstandard2.0" Visible="true" />
     </ItemGroup>
+
+    <Target Name="CopyAttributesDll" AfterTargets="Build">
+        <Copy
+                SourceFiles="..\Attributes\bin\$(Configuration)\netstandard2.0\Attributes.dll"
+                DestinationFolder="$(OutputPath)" />
+    </Target>
 
 </Project>
