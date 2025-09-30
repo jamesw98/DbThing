@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
 
         <PackageId>DbThing</PackageId>
-        <Version>1.0.5</Version>
+        <Version>1.0.6</Version>
         <Authors>James Wallace</Authors>
         <Company>DbThing</Company>
         <Description>A minimal micro ORM.</Description>
