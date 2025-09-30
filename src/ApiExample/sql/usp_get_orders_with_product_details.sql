@@ -13,4 +13,4 @@ AS
 	INNER JOIN Production.Product P
 		ON S.ProductID = P.ProductID
 
-RETURN 0 
+RETURN 0

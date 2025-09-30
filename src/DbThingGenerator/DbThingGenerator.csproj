@@ -10,7 +10,7 @@
         <LangVersion>12</LangVersion>
 
         <PackageId>DbThingGenerator</PackageId>
-        <Version>1.0.0</Version>
+        <Version>1.0.5</Version>
         <Authors>James Wallace</Authors>
         <Company>DbThing</Company>
         <Description>A source generator for creating models for DbThing.</Description>
@@ -22,7 +22,6 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" PrivateAssets="all" />
-        <ProjectReference Include="..\Attributes\Attributes.csproj" />
     </ItemGroup>
     
     <!-- csproj magic from https://andrewlock.net/creating-a-source-generator-part-8-solving-the-source-generator-marker-attribute-problem-part2/ -->
@@ -30,18 +29,6 @@
     <ItemGroup>
         <!-- Pack the generator dll in the analyzers/dotnet/cs path -->
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-
-        <!-- Pack the attributes dll in the analyzers/dotnet/cs path -->
-        <None Include="$(OutputPath)\Attributes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-
-        <!-- Pack the attributes dll in the lib\netstandard2.0 path -->
-        <None Include="$(OutputPath)\Attributes.dll" Pack="true" PackagePath="lib\netstandard2.0" Visible="true" />
     </ItemGroup>
-
-    <Target Name="CopyAttributesDll" AfterTargets="Build">
-        <Copy
-                SourceFiles="..\Attributes\bin\$(Configuration)\netstandard2.0\Attributes.dll"
-                DestinationFolder="$(OutputPath)" />
-    </Target>
 
 </Project>

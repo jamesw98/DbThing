@@ -1,4 +1,4 @@
-﻿namespace DbThing.Common.Interfaces;
+﻿namespace DbThing.Interfaces;
 
 public interface IDbModel
 {

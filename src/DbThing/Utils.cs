@@ -19,7 +19,7 @@ public static class Utils
     (
         SqlConnection connection, 
         string procedure,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters,
         CommandType type
     )
     {
@@ -30,11 +30,14 @@ public static class Utils
         
         // Check all the procedure parameters to see if we have a default or a null value. If we do, convert the 
         // parameter to DBNull. This prevents a bunch of strange things from happening.
-        foreach (var p in parameters)
+        if (parameters is not null)
         {
-            if (p is { IsNullable: true, Value: null } || p.Value is null)
+            foreach (var p in parameters)
             {
-                p.SqlValue = DBNull.Value;
+                if (p is { IsNullable: true, Value: null } || p.Value is null)
+                {
+                    p.SqlValue = DBNull.Value;
+                }
             }
         }
 
@@ -93,12 +96,12 @@ public static class Utils
             {
                 case CommandType.Text:
                     Log.Information("Query encountered an error:\n{Error}",  e.Message);
-                    break;
+                    throw;
                 case CommandType.StoredProcedure:
                     Log.Error("Procedure {Procedure} encountered an error:\n{Error}", procedure, e.Message);
-                    break;
+                    throw;
                 case CommandType.TableDirect:
-                    break;
+                    throw;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

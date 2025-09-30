@@ -1,5 +1,5 @@
 ﻿using System.Data;
-using DbThing.Common.Interfaces;
+using DbThing.Interfaces;
 using Microsoft.Data.SqlClient;
 
 namespace DbThing;
@@ -19,7 +19,7 @@ public static class SyncSqlExtensions
     (
         this SqlConnection connection,
         string procedure,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure
     )
     {
@@ -32,7 +32,7 @@ public static class SyncSqlExtensions
     (
         this SqlConnection connection,
         string procedure,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure
     ) where T : IDbModel, new()
     {
@@ -69,7 +69,7 @@ public static class SyncSqlExtensions
         this SqlConnection connection,
         string procedure,
         string columnName,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure
     )
     {

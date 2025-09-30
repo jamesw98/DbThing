@@ -2,7 +2,7 @@ using System.Data;
 using System.Diagnostics;
 using ApiExample;
 using DbThing;
-using DbThing.Common.Interfaces;
+using DbThing.Interfaces;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
@@ -42,12 +42,12 @@ app.UseHttpsRedirection();
 var repo = new DbRepository(builder.Configuration);
 
 // Example of using DbThing to get objects whose properties are all primitives.
-app.MapGet("/person", async () => await (GetListHelper<Person>("usp_get_employees", "/person")))
+app.MapGet("/person", async () => await GetListHelper<Person>("usp_get_employees", "/person"))
     .WithName("GetPeople");
 
 // Example of using DbThing to get objects who has properties that are "complex" objects. 
 app
-    .MapGet("/order", async () => await (GetListHelper<Order>("usp_get_orders_with_product_details", "/order")))
+    .MapGet("/order", async () => await GetListHelper<Order>("usp_get_orders_with_product_details", "/order"))
     .WithName("GetOrders");
 
 // Example of using DbThing with raw query text instead of a stored procedure. 
@@ -61,6 +61,8 @@ app.MapGet("/product", async () =>
                                    	Color,
                                    	ListPrice
                                    FROM Production.Product
+                                   WHERE Color IS NOT NULL AND
+                                         ListPrice > 0
                                    """, type: CommandType.Text);
     sw.Stop();
     Log.Information("Finished call to {EndPoint}, took {Time} seconds.", "/product", sw.Elapsed);

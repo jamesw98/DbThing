@@ -1,5 +1,5 @@
-﻿using Attributes;
-using DbThing.Common.Interfaces;
+﻿using DbThing.Attributes;
+using DbThing.Interfaces;
 
 namespace ApiExample;
 

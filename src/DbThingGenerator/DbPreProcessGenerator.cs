@@ -26,8 +26,8 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         {
             // Get the compilation and classes.
             var (compilation, classes) = source;
-            var dbComplexAttrSymbol = compilation.GetTypeByMetadataName("Attributes.DbComplexColumnAttribute");
-            var dbColumnAttrSymbol = compilation.GetTypeByMetadataName("Attributes.DbColumnAttribute");
+            var dbComplexAttrSymbol = compilation.GetTypeByMetadataName("DbThing.Attributes.DbComplexColumnAttribute");
+            var dbColumnAttrSymbol = compilation.GetTypeByMetadataName("DbThing.Attributes.DbColumnAttribute");
             
             foreach (var classDecl in classes)
             {

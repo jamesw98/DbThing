@@ -1,4 +1,4 @@
-﻿namespace Attributes;
+﻿namespace DbThing.Attributes;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class DbColumnAttribute(string columnName) : Attribute

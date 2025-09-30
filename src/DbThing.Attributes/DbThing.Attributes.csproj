@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
         <LangVersion>12</LangVersion>
+        <RootNamespace>Attributes</RootNamespace>
     </PropertyGroup>
 
 </Project>

@@ -1,5 +1,5 @@
 ﻿using System.Data;
-using DbThing.Common.Interfaces;
+using DbThing.Interfaces;
 using Microsoft.Data.SqlClient;
 
 namespace DbThing;
@@ -21,7 +21,7 @@ public static class AsyncSqlExtensions
     (
         this SqlConnection connection,
         string procedure,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure 
     ) where T : IDbModel, new()
     {
@@ -66,7 +66,7 @@ public static class AsyncSqlExtensions
         this SqlConnection connection,
         string procedure,
         string columnName,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure
     )
     {
@@ -110,7 +110,7 @@ public static class AsyncSqlExtensions
         this SqlConnection connection,
         string procedure,
         Func<Task<List<T?>>> action,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure
     )
     {
@@ -131,7 +131,7 @@ public static class AsyncSqlExtensions
     (
         this SqlConnection connection,
         string procedure,
-        SqlParameter[] parameters,
+        SqlParameter[]? parameters=null,
         CommandType type = CommandType.StoredProcedure
     ) where T : IDbModel, new()
     {
