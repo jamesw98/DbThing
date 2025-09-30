@@ -39,10 +39,11 @@ public static class Utils
                     p.SqlValue = DBNull.Value;
                 }
             }
+            
+            // Add the params and command type to the SQL command.        
+            command.Parameters.AddRange(parameters);
         }
-
-        // Add the params and command type to the SQL command.        
-        command.Parameters.AddRange(parameters);
+        
         command.CommandType = type;
         return (transaction, command);
     }
