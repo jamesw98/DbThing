@@ -46,6 +46,41 @@ public static class Utils
         command.CommandType = type;
         return (transaction, command);
     }
+    
+    public static (IDbTransaction, IDbCommand) Setup
+    (
+        IDbConnection connection, 
+        string sql,
+        IEnumerable<SqlParameter>? parameters,
+        CommandType type
+    )
+    {
+        parameters = parameters?.ToList();
+        
+        // Open a connection, start a transaction, and create a new SQL command with the appropriate params.
+        connection.Open();
+        var transaction = connection.BeginTransaction();
+        var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.CommandType = type;
+        
+        // Check all the procedure parameters to see if we have a default or a null value. If we do, convert the 
+        // parameter to DBNull. This prevents a bunch of strange things from happening.
+        if (parameters is not null)
+        {
+            foreach (var p in parameters)
+            {
+                if (p is { IsNullable: true, Value: null } || p.Value is null)
+                {
+                    p.SqlValue = DBNull.Value;
+                }
+
+                command.Parameters.Add(p);
+            }
+        }
+
+        return (transaction, command);
+    }
 
     /// <summary>
     /// Run a stored procedure. This handles commiting or rolling back the transaction depending on the result of the
@@ -71,6 +106,63 @@ public static class Utils
         {
             var sw = Stopwatch.StartNew();
             var result = await action.Invoke();
+            transaction.Commit();
+            sw.Stop();
+
+            switch (command.CommandType)
+            {
+                case CommandType.Text:
+                    Log.Information("Executed query. Took {Time}ms",  sw.Elapsed.Milliseconds);
+                    break;
+                case CommandType.StoredProcedure:
+                    Log.Information("Executed procedure {Procedure}. Took {Time}ms", procedure, sw.Elapsed.Milliseconds);
+                    break;
+                case CommandType.TableDirect:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            
+            return result;
+        }
+        catch (Exception e)
+        {
+            switch (command.CommandType)
+            {
+                case CommandType.Text:
+                    Log.Information("Query encountered an error:\n{Error}",  e.Message);
+                    throw;
+                case CommandType.StoredProcedure:
+                    Log.Error("Procedure {Procedure} encountered an error:\n{Error}", procedure, e.Message);
+                    throw;
+                case CommandType.TableDirect:
+                    throw;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            transaction.Rollback();
+            throw;
+        }
+        finally
+        {
+            command.Dispose();
+            connection.Close();
+        }
+    }
+    
+    public static T Run<T>
+    (
+        IDbConnection connection,
+        IDbTransaction transaction,
+        IDbCommand command,
+        string procedure,
+        Func<T> action
+    )
+    {
+        try
+        {
+            var sw = Stopwatch.StartNew();
+            var result = action.Invoke();
             transaction.Commit();
             sw.Stop();
 
