@@ -16,4 +16,7 @@ public partial class Product : IDbPreProcessModel
     
     [DbColumn("ListPrice")]
     public decimal Price { get; set; }  
+    
+    [DbColumn("EnumTest")]
+    public SampleEnum Enum { get; set; }
 }

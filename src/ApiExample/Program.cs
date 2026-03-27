@@ -59,7 +59,8 @@ app.MapGet("/product", async () =>
                                    	Name, 
                                    	ProductNumber,
                                    	Color,
-                                   	ListPrice
+                                   	ListPrice,
+                                   	100 as EnumTest
                                    FROM Production.Product
                                    WHERE Color IS NOT NULL AND
                                          ListPrice > 0

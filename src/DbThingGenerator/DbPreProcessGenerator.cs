@@ -68,7 +68,7 @@ public class DbPreProcessGenerator : IIncrementalGenerator
             sb.AppendLine("{");
         }
         
-        sb.AppendLine($"    using DbThing;");
+        sb.AppendLine("    using DbThing;");
         sb.AppendLine($"    partial class {classSymbol.Name}");
         sb.AppendLine("    {");
         sb.AppendLine("        public void Initialize(Dictionary<string, object> values)");
@@ -86,11 +86,19 @@ public class DbPreProcessGenerator : IIncrementalGenerator
                 continue;
             }
 
-            // Then, check if we need to do a standard/primitive object setup. 
+            // Then, check if we need to do a standard/primitive object setup.
             var columnAttr = prop.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, standardAttrName));
             if (columnAttr is not null)
             {
-                BuildPrimitive(prop, columnAttr, sb, typeName);
+                var (isEnum, isNullable, enumTypeSymbol) = GetEnumInfo(prop.Type);
+                if (isEnum)
+                {
+                    BuildEnum(prop, columnAttr, sb, enumTypeSymbol!, isNullable);
+                }
+                else
+                {
+                    BuildPrimitive(prop, columnAttr, sb, typeName);
+                }
             }
         }
 
@@ -150,5 +158,50 @@ public class DbPreProcessGenerator : IIncrementalGenerator
         }
 
         sb.AppendLine($"            {prop.Name} = values.TryGet{(required ? "Required" : string.Empty)}<{typeName}>(\"{columnName}\");");
+    }
+
+    /// <summary>
+    /// Returns enum info for a type: whether it is an enum, whether it is nullable, and the enum type symbol.
+    /// </summary>
+    private static (bool isEnum, bool isNullable, INamedTypeSymbol? enumType) GetEnumInfo(ITypeSymbol type)
+    {
+        if (type.TypeKind == TypeKind.Enum)
+        {
+            return (true, false, (INamedTypeSymbol)type);
+        }
+
+        return type is INamedTypeSymbol
+        {
+            IsGenericType: true, ConstructedFrom.SpecialType: SpecialType.System_Nullable_T
+        } nt && nt.TypeArguments[0].TypeKind == TypeKind.Enum
+            ? (true, true, (INamedTypeSymbol)nt.TypeArguments[0])
+            : (false, false, null);
+    }
+
+    /// <summary>
+    /// Builds an enum property assignment, casting the underlying integer type from the database.
+    /// Uses fully qualified enum names so no extra using directives are needed in the generated file.
+    /// </summary>
+    private static void BuildEnum(IPropertySymbol prop, AttributeData attr, StringBuilder sb, INamedTypeSymbol enumType, bool isNullable)
+    {
+        var columnName = prop.Name.ToUpperInvariant();
+
+        if (attr.ConstructorArguments.Length >= 1 && attr.ConstructorArguments[0].Value is string val)
+            columnName = val;
+
+        if (attr.NamedArguments.Any(kv => kv.Key == "ColumnName"))
+            columnName = attr.NamedArguments.First(kv => kv.Key == "ColumnName").Value.Value as string ?? columnName;
+
+        var fullyQualifiedEnumName = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var underlyingType = enumType.EnumUnderlyingType!.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+
+        if (!isNullable)
+        {
+            sb.AppendLine($"            {prop.Name} = ({fullyQualifiedEnumName})values.TryGetRequired<{underlyingType}>(\"{columnName}\");");
+        }
+        else
+        {
+            sb.AppendLine($"            {prop.Name} = values.TryGet<{underlyingType}?>(\"{columnName}\") is {{ }} _v_{prop.Name} ? ({fullyQualifiedEnumName})_v_{prop.Name} : null;");
+        }
     }
 }
